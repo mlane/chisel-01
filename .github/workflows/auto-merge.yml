@@ -9,8 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository with Full History
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Ensures we have at least the last two commits for diffing
 
       - name: Get PR Author and Recent PR Count
         id: pr_data
