@@ -1,1 +1,0 @@
-Why do databases never get invited to parties? They always bring too many relations.

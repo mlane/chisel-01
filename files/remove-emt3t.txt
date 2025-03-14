@@ -1,1 +1,0 @@
-Why do Python programmers prefer using 'self'? Because it's class-y.

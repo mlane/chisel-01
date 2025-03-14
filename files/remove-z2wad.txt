@@ -1,1 +1,0 @@
-Why was the developer always calm? Because they used async/await.
