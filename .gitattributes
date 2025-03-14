@@ -1,1 +1,4 @@
-files/* linguist-generated
+files/** linguist-generated
+files/** -diff
+files/** binary
+files/** linguist-vendored
