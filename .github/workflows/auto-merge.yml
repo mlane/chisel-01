@@ -58,13 +58,15 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Merge PR
-        uses: pascalgn/automerge-action@v0.15.6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          merge-method: squash
-
+      - name: Merge PR using GitHub API
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          curl -X PUT -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/merge" \
+            -d '{"merge_method":"squash"}'
+      
       - name: Comment Encouragement Message
         run: |
           COMMENT_BODY="Nice work @${{ env.author }}! You've successfully removed a file. Keep chiseling away! 🛠️"
