@@ -64,7 +64,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           merge-method: squash
-          merge-labels: "auto-merge"  # Optional: Can be removed if you want everything auto-merged
 
       - name: Comment Encouragement Message
         run: |
