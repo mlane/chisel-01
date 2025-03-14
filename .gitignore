@@ -20,3 +20,6 @@ build/
 
 # Ignore Git metadata that shouldn't be committed manually
 .git/
+
+# Misc
+*.py

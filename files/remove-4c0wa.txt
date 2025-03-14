@@ -1,0 +1,1 @@
+Why don’t software engineers ever get lost? Because they always follow the stack trace.

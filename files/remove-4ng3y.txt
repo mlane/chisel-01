@@ -1,0 +1,1 @@
+Why did the JavaScript function break up with the loop? Because it had too many callbacks!
