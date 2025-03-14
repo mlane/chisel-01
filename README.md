@@ -32,7 +32,7 @@ Every file removed gets us closer to revealing what’s underneath.
 - **You can only delete one file per pull request.**
 - **No automation—each PR must be manual.**
 - **No edits—only deletions.**
-- **A maximum of 20 PRs per user per day.**
+- **A maximum of 20 PRs per user per day is preferred.**
 - **PRs that add or modify files will be rejected.**
 
 ### What Happens When It's Done?
