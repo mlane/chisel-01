@@ -31,8 +31,8 @@ jobs:
 
       - name: Verify PR only deletes one file inside /files/
         run: |
-          FILES_DELETED=$(git diff --diff-filter=D --name-only ${{ github.event.pull_request.base.sha }} | grep '^files/' | wc -l)
-          FILES_OUTSIDE=$(git diff --diff-filter=D --name-only ${{ github.event.pull_request.base.sha }} | grep -v '^files/' | wc -l)
+          FILES_DELETED=$(git diff --diff-filter=D --name-only HEAD^ HEAD | grep '^files/' | wc -l)
+          FILES_OUTSIDE=$(git diff --diff-filter=D --name-only HEAD^ HEAD | grep -v '^files/' | wc -l)
           if [ "$FILES_DELETED" -ne 1 ]; then
             echo "Error: Your PR must delete exactly one file inside /files/ directory."
             exit 1
@@ -41,21 +41,21 @@ jobs:
             echo "Error: You cannot delete files outside the /files/ directory."
             exit 1
           fi
-
+      
       - name: Ensure PR does not add or modify files
         run: |
-          ADDED_FILES=$(git diff --diff-filter=A --name-only ${{ github.event.pull_request.base.sha }} | wc -l)
-          MODIFIED_FILES=$(git diff --diff-filter=M --name-only ${{ github.event.pull_request.base.sha }} | wc -l)
+          ADDED_FILES=$(git diff --diff-filter=A --name-only HEAD^ HEAD | wc -l)
+          MODIFIED_FILES=$(git diff --diff-filter=M --name-only HEAD^ HEAD | wc -l)
           if [ "$ADDED_FILES" -gt 0 ] || [ "$MODIFIED_FILES" -gt 0 ]; then
             echo "Error: Your PR cannot add or modify files. Only deletions are allowed."
             exit 1
           fi
-
+      
       - name: Approve PR
         uses: hmarr/auto-approve-action@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Merge PR
         uses: pascalgn/automerge-action@v0.15.6
         env:
