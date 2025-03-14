@@ -1,0 +1,72 @@
+name: Auto-Merge Single File PRs with Limits
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  validate-and-merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get PR Author and Recent PR Count
+        id: pr_data
+        run: |
+          AUTHOR=${{ github.event.pull_request.user.login }}
+          RECENT_PRS=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=all" | \
+            jq -r --arg AUTHOR "$AUTHOR" '[.[] | select(.user.login == $AUTHOR and .created_at >= "'$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)'")] | length')
+          echo "author=$AUTHOR" >> $GITHUB_ENV
+          echo "recent_prs=$RECENT_PRS" >> $GITHUB_ENV
+
+      - name: Check PR Limit
+        run: |
+          if [ "$recent_prs" -ge 20 ]; then
+            echo "Error: You have reached the daily limit of 20 PRs. Please try again tomorrow."
+            exit 1
+          fi
+
+      - name: Verify PR only deletes one file inside /files/
+        run: |
+          FILES_DELETED=$(git diff --diff-filter=D --name-only ${{ github.event.pull_request.base.sha }} | grep '^files/' | wc -l)
+          FILES_OUTSIDE=$(git diff --diff-filter=D --name-only ${{ github.event.pull_request.base.sha }} | grep -v '^files/' | wc -l)
+          if [ "$FILES_DELETED" -ne 1 ]; then
+            echo "Error: Your PR must delete exactly one file inside /files/ directory."
+            exit 1
+          fi
+          if [ "$FILES_OUTSIDE" -gt 0 ]; then
+            echo "Error: You cannot delete files outside the /files/ directory."
+            exit 1
+          fi
+
+      - name: Ensure PR does not add or modify files
+        run: |
+          ADDED_FILES=$(git diff --diff-filter=A --name-only ${{ github.event.pull_request.base.sha }} | wc -l)
+          MODIFIED_FILES=$(git diff --diff-filter=M --name-only ${{ github.event.pull_request.base.sha }} | wc -l)
+          if [ "$ADDED_FILES" -gt 0 ] || [ "$MODIFIED_FILES" -gt 0 ]; then
+            echo "Error: Your PR cannot add or modify files. Only deletions are allowed."
+            exit 1
+          fi
+
+      - name: Approve PR
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge PR
+        uses: pascalgn/automerge-action@v0.15.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          merge-method: squash
+
+      - name: Comment Encouragement Message
+        run: |
+          COMMENT_BODY="Nice work @${{ env.author }}! You've successfully removed a file. Keep chiseling away! 🛠️"
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d "{\"body\": \"$COMMENT_BODY\"}"
