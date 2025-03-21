@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository with Full History
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # Ensures we have at least the last two commits for diffing
+          fetch-depth: 2
 
       - name: Verify PR only deletes one file inside /files/
         run: |
@@ -40,34 +40,18 @@ jobs:
             exit 1
           fi
 
-      - name: Approve PR (with Debugging)
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
-          RESPONSE=$(curl -s -o response.json -w "%{http_code}" -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/reviews" \
-            -d '{"event":"APPROVE"}')
-          cat response.json
-          if [ "$RESPONSE" -ne 200 ]; then
-            echo "Error: Failed to approve PR. GitHub API response:"
-            cat response.json
-            exit 1
-          fi
-
       - name: Merge PR using GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
-          curl -X PUT -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/merge" \
-            -d '{"merge_method":"squash"}'
+          gh pr merge $PR_NUMBER --squash --delete-branch --repo ${{ github.repository }} --admin
 
       - name: Comment Encouragement Message
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMENT_BODY="Nice work @${{ github.event.pull_request.user.login }}! You've successfully removed a file. Keep chiseling away! 🛠️"
-          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -d "{\"body\": \"$COMMENT_BODY\"}"
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "$COMMENT_BODY"
